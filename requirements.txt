@@ -3,7 +3,7 @@ numpy
 matplotlib
 seaborn
 scikit-learn
-streamlit
+streamlit>=1.33.0
 plotly
 joblib
 jupyter
