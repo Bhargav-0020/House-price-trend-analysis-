@@ -18,8 +18,14 @@ Activate the virtual environment before running the application.
 venv\Scripts\activate
 ```
 
-### 3. Run the Streamlit Application
+### 3. Train / Update Regression Models
+Train/update the regression models first (Linear Regression, Ridge, Random Forest, Gradient Boosting):
 
+```bash
+python train_models.py
+```
+
+### 4. Run the Streamlit Application
 Start the Streamlit app using the following command.
 
 ```bash

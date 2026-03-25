@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import os
 import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -54,8 +55,30 @@ h1, h2, h3 {
 """, unsafe_allow_html=True)
 
 
-model = joblib.load("model/model.pkl")
-scaler = joblib.load("model/scaler.pkl")
+MODEL_DIR = "model"
+
+
+def safe_load_joblib(path: str):
+    if os.path.exists(path):
+        return joblib.load(path)
+    return None
+
+
+linear_model = safe_load_joblib(os.path.join(MODEL_DIR, "model.pkl"))
+ridge_model = safe_load_joblib(os.path.join(MODEL_DIR, "ridge_model.pkl"))
+rf_model = safe_load_joblib(os.path.join(MODEL_DIR, "random_forest_model.pkl"))
+gb_model = safe_load_joblib(os.path.join(MODEL_DIR, "gradient_boosting_model.pkl"))
+
+scaler = safe_load_joblib(os.path.join(MODEL_DIR, "scaler.pkl"))
+
+available_models = {
+    "Linear Regression": linear_model,
+    "Ridge": ridge_model,
+    "Random Forest": rf_model,
+    "Gradient Boosting": gb_model,
+}
+available_models = {k: v for k, v in available_models.items() if v is not None}
+
 df = pd.read_csv("dataset/housing.csv")
 
 st.set_page_config(
@@ -92,7 +115,7 @@ if selected == "Home":
 
     st.write("""
     This dashboard provides comprehensive analysis of real estate data and predicts
-    property prices using a Machine Learning model (Linear Regression).
+    property prices using a Machine Learning model (Linear Regression + more).
 
     It helps users understand:
     • Market price trends  
@@ -119,7 +142,7 @@ if selected == "Home":
     with col2:
         st.markdown("""
         **Step 2 — Machine Learning**
-        - Linear Regression model  
+        - Regression models (Linear/Ridge/Random Forest/Gradient Boosting)  
         - Feature scaling applied  
         - Model trained & evaluated  
         - Real-time price prediction  
@@ -313,6 +336,14 @@ elif selected == "Price Prediction":
 
     st.write("Enter the property details to estimate the house price.")
 
+    if not available_models:
+        st.error("No trained models found. Run `python train_models.py` first.")
+        st.stop()
+
+    if scaler is None:
+        st.error("Missing `model/scaler.pkl`. Run `python train_models.py` first.")
+        st.stop()
+
     # Numeric inputs
     area = st.number_input("Area (in square feet)", min_value=300, max_value=20000, value=1000)
     bedrooms = st.number_input("Bedrooms", min_value=1, max_value=10, value=3)
@@ -350,9 +381,13 @@ elif selected == "Price Prediction":
     # Scale input
     input_data = scaler.transform(input_df)
 
+    # Model selection
+    model_name = st.selectbox("Regression Model", list(available_models.keys()))
+    selected_model = available_models[model_name]
+
     # Prediction
     if st.button("Predict Price"):
-        prediction = model.predict(input_data)
+        prediction = selected_model.predict(input_data)
         price = int(prediction[0])
 
         st.success(f"Estimated House Price: ₹ {price:,}")
